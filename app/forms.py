@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
-from wtforms import StringField, PasswordField, BooleanField, SubmitField
-from wtforms.validators import DataRequired, ValidationError, Email, EqualTo
+from wtforms import StringField, PasswordField, BooleanField, SubmitField, TextAreaField
+from wtforms.validators import DataRequired, ValidationError, Email, EqualTo, Length
 import sqlalchemy as sa
 from app import db
 from app.models import User
@@ -27,3 +27,25 @@ class RegistrationForm(FlaskForm):
         user = db.session.scalar(sa.select(User).where(User.email == email.data))
         if user is not None:
             raise ValidationError('該 email 已存在')
+        
+class EditProfileForm(FlaskForm):
+    username = StringField('使用者名稱', validators=[DataRequired()])
+    about_me = TextAreaField('關於我', validators=[Length(min=0,max=200)])
+    submit = SubmitField('修改')
+
+    def __init__(self, original_username, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.original_username = original_username
+
+    def validate_username(self, username):
+        if username.data != self.original_username:
+            user = db.session.scalar(sa.select(User).where(User.username == self.username.data))
+            if user is not None:
+                raise ValidationError('該使用者名稱已有人使用')
+            
+class EmptyForm(FlaskForm):
+    submit = SubmitField('Submit')
+
+class PostForm(FlaskForm):
+    post = TextAreaField('說點什麼...',validators=[DataRequired(), Length(min=1, max=140)])
+    submit = SubmitField('發佈')
